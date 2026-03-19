@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal AI | 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00ff88;
+            --burn: #ff4757;
+            --bg: #050505;
+            --card: #121212;
+            --text: #ffffff;
+            --dim: #888888;
+        }
+
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
+
+        /* TELA DE LOGIN (CADEADO) */
+        #lock-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 10000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .lock-card { background: var(--card); padding: 40px; border-radius: 30px; border: 1px solid #333; text-align: center; width: 85%; max-width: 350px; }
+        .lock-card h1 { font-size: 1.5rem; margin-bottom: 20px; color: var(--primary); }
+        .pin-field { 
+            width: 100%; background: #000; border: 2px solid #333; color: var(--primary); 
+            font-size: 2rem; text-align: center; padding: 15px; border-radius: 15px; margin-bottom: 20px; outline: none;
+        }
+        .btn-unlock { 
+            width: 100%; background: var(--primary); color: #000; border: none; 
+            padding: 18px; border-radius: 15px; font-weight: 900; cursor: pointer; font-size: 1rem;
+        }
+
+        /* CONTEÚDO DO APP (ESCONDIDO INICIALMENTE) */
+        #app-interface { display: none; padding: 20px 20px 150px; }
+
+        .header-day { margin-bottom: 25px; border-left: 5px solid var(--primary); padding-left: 15px; }
+        .day-text { color: var(--primary); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 2px; }
+        .workout-text { font-size: 1.8rem; font-weight: 900; margin: 5px 0; }
+
+        .tabs { display: flex; background: #1a1a1a; padding: 5px; border-radius: 15px; margin-bottom: 25px; gap: 5px; overflow-x: auto; }
+        .tab { 
+            flex: 1; border: none; background: none; color: var(--dim); padding: 12px; 
+            font-weight: 700; cursor: pointer; font-size: 0.7rem; border-radius: 10px; white-space: nowrap;
+        }
+        .tab.active { background: var(--primary); color: #000; box-shadow: 0 4px 15px rgba(0,255,136,0.3); }
+
+        /* MODO PERDER PESO */
+        .burn-mode .tab.active { background: var(--burn); color: #fff; }
+        .burn-mode .header-day { border-left-color: var(--burn); }
+        .burn-mode .day-text { color: var(--burn); }
+
+        .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid #222; }
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .ex-info b { font-size: 1.1rem; display: block; }
+        .ex-info small { color: var(--dim); font-size: 0.75rem; }
+        .reps { background: #1a1a1a; color: var(--primary); padding: 5px 10px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; }
+        .burn-mode .reps { color: var(--burn); }
+
+        .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border-top: 1px solid #222; padding-top: 15px; }
+        .input-group label { display: block; font-size: 0.6rem; color: var(--dim); text-transform: uppercase; margin-bottom: 5px; }
+        .suggested-val { color: var(--primary); font-weight: 800; font-size: 1rem; }
+        .burn-mode .suggested-val { color: var(--burn); }
+        .kg-input { width: 100%; background: #000; border: 1px solid #333; color: #fff; padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; }
+
+        .cardio-box { background: linear-gradient(145deg, #1a1a1a, #0a0a0a); padding: 20px; border-radius: 20px; border: 1px dashed #444; margin-top: 20px; }
+        
+        .dock { 
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
+            background: rgba(18,18,18,0.9); backdrop-filter: blur(10px); padding: 15px 25px; border-radius: 25px;
+            border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; z-index: 999;
+        }
+        #timer-display { font-size: 2rem; font-weight: 900; font-family: monospace; color: var(--primary); }
+        .burn-mode #timer-display { color: var(--burn); }
+        .btn-rest { background: var(--primary); color: #000; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 900; cursor: pointer; }
+        .burn-mode .btn-rest { background: var(--burn); color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="lock-screen">
+        <div class="lock-card">
+            <h1>🔒 PERSONAL AI</h1>
+            <input type="password" id="pin-input" class="pin-field" placeholder="PIN" maxlength="4">
+            <button class="btn-unlock" onclick="unlockApp()">ENTRAR NO TREINO</button>
+            <p id="error-msg" style="color: var(--burn); margin-top: 15px; font-weight: bold; display: none;">SENHA INCORRETA!</p>
+        </div>
+    </div>
+
+    <div id="app-interface">
+        <div class="header-day">
+            <div id="label-dia" class="day-text">--</div>
+            <div id="label-treino" class="workout-text">--</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="changeGoal('forte', this)">FORTE</button>
+            <button class="tab" onclick="changeGoal('medio', this)">MÉDIO</button>
+            <button class="tab" onclick="changeGoal('definir', this)">DEFINIR</button>
+            <button class="tab" onclick="changeGoal('perder', this)">EMAGRECER</button>
+        </div>
+
+        <div id="exercise-feed"></div>
+        <div id="cardio-feed"></div>
+
+        <div class="dock">
+            <div>
+                <small style="font-size: 0.6rem; color: var(--dim); display: block; font-weight: 800;">DESCANSO</small>
+                <span id="timer-display">01:00</span>
+            </div>
+            <button class="btn-rest" onclick="startTimer()">INICIAR PAUSA</button>
+        </div>
+    </div>
+
+<script>
+    const PIN_CORRETO = "1234";
+    let goal = 'forte';
+    
+    const db = {
+        'Segunda': { titulo: 'Peito e Tríceps', list: [
+            { id: 'p1', n: 'Supino Reto', m: 'Barra Olímpica', r: 40, reps: { forte:'4x8', medio:'3x12', definir:'3x15', perder:'4x20' } },
+            { id: 'p2', n: 'Tríceps Corda', m: 'Polia Alta', r: 20, reps: { forte:'4x10', medio:'3x12', definir:'3x15', perder:'4x20' } }
+        ]},
+        'Terça': { titulo: 'Costas e Bíceps', list: [
+            { id: 'c1', n: 'Puxada Frente', m: 'Pulley', r: 45, reps: { forte:'4x8', medio:'3x12', definir:'3x15', perder:'4x20' } },
+            { id: 'c2', n: 'Rosca Direta', m: 'Barra W', r: 10, reps: { forte:'4x10', medio:'3x12', definir:'3x15', perder:'4x20' } }
+        ]},
+        'Quarta': { titulo: 'Perna Completo', list: [
+            { id: 'l1', n: 'Leg Press 45', m: 'Máquina', r: 100, reps: { forte:'4x10', medio:'3x15', definir:'3x20', perder:'4x25' } },
+            { id: 'l2', n: 'Extensora', m: 'Máquina', r: 30, reps: { forte:'4x12', medio:'3x15', definir:'3x20', perder:'4x25' } }
+        ]},
+        'Quinta': { titulo: 'Bíceps e Ombro', list: [
+            { id: 's1', n: 'Desenvolvimento', m: 'Halteres', r: 12, reps: { forte:'4x8', medio:'3x12', definir:'3x15', perder:'4x20' } },
+            { id: 's2', n: 'Elevação Lateral', m: 'Halteres', r: 8, reps: { forte:'4x12', medio:'3x15', definir:'3x20', perder:'4x25' } }
+        ]},
+        'Sexta': { titulo: 'Abdômen e Cardio', list: [
+            { id: 'f1', n: 'Abdominal Supra', m: 'Solo', r: 0, reps: { forte:'4x20', medio:'4x30', definir:'4x40', perder:'5x50' } },
+            { id: 'f2', n: 'Burpees', m: 'Peso Corpo', r: 0, reps: { forte:'3x10', medio:'3x15', definir:'4x20', perder:'5x20' } }
+        ]}
+    };
+
+    function unlockApp() {
+        const pin = document.getElementById('pin-input').value;
+        if(pin === PIN_CORRETO) {
+            document.getElementById('lock-screen').style.display = 'none';
+            document.getElementById('app-interface').style.display = 'block';
+            render();
+        } else {
+            document.getElementById('error-msg').style.display = 'block';
+        }
+    }
+
+    function changeGoal(val, btn) {
+        goal = val;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        document.body.classList.toggle('burn-mode', goal === 'perder');
+        render();
+    }
+
+    function render() {
+        const dias = ['Segunda', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Segunda'];
+        const hoje = dias[new Date().getDay()];
+        const data = db[hoje];
+        const feed = document.getElementById('exercise-feed');
+        const timers = { forte: '02:00', medio: '01:00', definir: '00:45', perder: '00:30' };
+
+        document.getElementById('label-dia').innerText = hoje + "-feira";
+        document.getElementById('label-treino').innerText = data.titulo;
+        document.getElementById('timer-display').innerText = timers[goal];
+
+        feed.innerHTML = data.list.map(ex => {
+            let mult = { forte: 1, medio: 0.7, definir: 0.5, perder: 0.4 };
+            let sug = ex.r === 0 ? "Peso do Corpo" : Math.round(ex.r * mult[goal]) + " kg";
+            let salvo = localStorage.getItem('kg_'+ex.id) || '';
+
+            return `
+            <div class="card">
+                <div class="card-top">
+                    <div class="ex-info"><b>${ex.n}</b><small>📍 ${ex.m}</small></div>
+                    <div class="reps">${ex.reps[goal]}</div>
+                </div>
+                <div class="inputs">
+                    <div class="input-group">
+                        <label>Sugestão AI</label>
+                        <span class="suggested-val">${sug}</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Carga Real</label>
+                        <input type="number" class="kg-input" value="${salvo}" placeholder="--" onchange="localStorage.setItem('kg_${ex.id}', this.value)">
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+
+        document.getElementById('cardio-feed').innerHTML = `
+            <div class="cardio-box">
+                <b style="color:var(--primary); font-size:0.8rem;">🏃 CARDIO 30 MINUTOS</b>
+                <p style="font-size:0.85rem; color:#ccc; margin:10px 0;">${goal === 'perder' ? 'HIIT: 1 min CORRENDO / 30 seg PARADO.' : 'Caminhada rápida em inclinação constante.'}</p>
+            </div>`;
+    }
+
+    function startTimer() {
+        let display = document.getElementById('timer-display');
+        let total = parseInt(display.innerText.split(':')[0]) * 60 + parseInt(display.innerText.split(':')[1]);
+        const interval = setInterval(() => {
+            total--;
+            let m = Math.floor(total/60), s = total%60;
+            display.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            if(total <= 0) { clearInterval(interval); alert("Pausa finalizada!"); render(); }
+        }, 1000);
+    }
+</script>
+</body>
+</html>
